@@ -154,7 +154,7 @@ Exploratory Data Analysis(탐색적 자료 분석)
 
 	-공간자기상관
 		단일 변수의 위치에 따른 상관관계
-		거리&방향에 ㄸ라 상관관계의 강도가 변함
+		거리&방향에 따라 상관관계의 강도가 변함
 
 	-공간교차상관
 		서로 다른 변수간 위치에 따른 상관관계
@@ -187,4 +187,105 @@ MAUP(Modifiable Area Unit Problem) 가변적 공간 단위 문제
 
   Zonation effect(띠의 모양(스키마)로 인한 영향)
 	자료를 요약하는 기준에 따라(grid의 행,열) 선형상관계수,표준편차가 바뀜
-	
+
+
+3장. 공간 패턴 모델링
+
+--일변량(Univariate) 공간 정의
+      ㄴ 분석할 변수나 변량이 하나
+	1. 시각화(위치기반 지도)
+	2. h-scattergram -> 거리,방향에 따른 관계
+
+
+  h-scattergram	
+	h-scattergram을 통해 데이터간의 공간관계를 나타낼 수 있음
+	1.scattergram
+		같은 방향에서 다른 속성의 관계를 나타낸 점 그래프
+	2.h-scattergram
+		같은 속성에서 거리(h)와 방향에 따른 관계를 나타낸 점 그래프
+
+	-> 관습에 따라 h벡터의 시작점(꼬리)를 z(u) 종점(머리)을 z(u+h)라 함
+	-> 거리(lags)와 각도로 데이터를 그룹시키며, 이를 통해 h-scattergram이 충분한 표본을 갖음, 거리[h+-△h], 방향[Θ+-△Θ]
+
+  1차원 h-scattergram
+	x축을 tail(속성값) y축을 head(h만큼 떨어진 지점의 속성값)로 표현
+	-> 두축이 거리라는 한 변수를 갖음으로 완변한 상관관계는 기울기가 45도인 이등분선에 위치할 것
+	-> 설정한 distance에 따라 data pair 갯수가 달라진다
+	    ex) 10 20 30 40 50 60 -> 거리 순서의 데이터의 속성값
+		if distance =1 -> (10,20), (20,30), (30,40)으로 표현
+	-> 거리가 멀어질수록 상관계수 떨어지고 거리가 멀수록 신뢰성 떨어짐
+
+ 2차원 h-scattergram
+	벡터h에 따른 거리와 방향(방위각으로) 표현
+	규칙적인 격자 구조에서 이동할 방향(Θ)을 고정시키고 거리(h)를 변화시킨다
+	불규칙적인 공간데이터에서 거리와 거리별 허용오차, 방향허용오차, 밴드넓이를 규정한다
+	  ->불규칙적인 경우 거리,방향 허용오차(완화)를 지정함으로써 해당되는 데이터를 지정할 수 있음 -> 주로 절반의 값을 허용오차로함
+	  -> ex) h=10 이면 △h = +-5 , Θ=NE 45도이면 △Θ는 NE 22.5도 ~ 67.5도
+		-> 각각의 h(10,20,30,40)별로 scattergram 작성됨
+	  -> 하지만 거리가 멀어질 수록 범위가 점점 넓어짐 -> bandwith를 설정해 해결
+	  -> bandwith를 10으로하면 그 이상의 범위는 포함안함
+
+  공분산 함수(Covariance Function)
+	https://blog.naver.com/PostView.naver?blogId=aservmz&logNo=222119112852&categoryNo=47&parentCategoryNo=46&viewDate=&currentPage=1&postListTopCurrentPage=1&from=thumbnailList&userTopListOpen=true&userTopListCount=5&userTopListManageOpen=false&userTopListCurrentPage=1  
+   	-> 참고해서 복습
+	-> 공분산 함수
+	C(h) = z(u)*z(u+h)/N(h) - mt*mh
+		ㄴ1번식		ㄴ2번식
+	  ->N(h)는 Data pair의 갯수
+	  -> 1번식 tail*head의 평균
+	  -> 2번식 tail평균 * head 평균
+
+   상관도(Correlogram)
+	상관관계도와 유사
+	p(h)(상관도) = C(h)/sqrt(tail분산*head분산)
+
+
+4장 공간패턴 모델링
+
+--세미베리오그램(Semivariogram)
+비유사도 평균의 측정 -> 공분산 함수와 반대되는 개념 -> 그래프 모양도 서로 대칭임
+  -> e(h) = (z(u)-z(u+h))^2/2 -> 잔차 제곱의 절반
+  -> e(h)값의 모음을 Semivariogram cloud라 함
+  -> 거리기반 속성간의 비상관성을 측정할 수 있음
+  -> 모든 데이터 짝을 사용하면 해석하기 어려워, 비슷한 거리의 샘플끼리 묶어 비교하기
+
+--세미베리오그램 정의
+    -> 잔차 제곱 절반의 평균
+    -> r(h) = E[ {z(u)-z(u+h)}^2 ] / 2
+
+
+--Sample 베리오그램
+  모든 데이터를 이용하여 Varigram cloud를 만들면 통계적 해석이 어렵기 때문에 h간격으로 묶어 베리오그램을 진행시킴
+  -> 공간분산의 크기를 의미하기도 함
+  -> 기준점에서 h값을 변화시키며 각각의 lag와 방위각에 해당하는 값의 세미베리오그램을 계산함
+  -> 기준점을 모든 점으로 바꿔가면서 평균을 계산하여 해당 h의 r(h)값을 도출
+
+
+  3개의 파리미터
+  1. Nugget effect -> r(0)일때의 값 -> 0인경우도 있음
+	h=0이라면 r(h)값도 0이여야 이지만, 잡음+오류로 인해 아닌경우도 있음
+	특정 h기준으로 Sample을 추출했을때 기준 h보다 작은 경우 상관관계를 고려할 수없게 된다
+	즉,에러 + micro-structure의 합을 뜻함
+  2. Sill -> 상관성이 사라지는 h값의 r(h)값
+  3. Range(상관거리) -> 상관성이 사라지는 지점의 h값
+
+
+--다른관점의 베리오그램
+  Directional variogram(방향성)
+	Sample 베리오그램과 더불어 방위각도 포함된 베리오그램
+	+y축(북쪽)기준 -22.5~22.5, 22.5~72.5, 72.5~115.5, 115.5~157.5
+		-> 이후 각도는 반대 방위각과 동일 
+  Omnidirectional(전 방향성)
+	완화각도를 0~90도로 설정함으로써 모든 방향에서 데이터 pair을 만듬
+	완화각도가 90도이하면 다 omnidircectional이라 함
+	-> 공분산함수와 semi베리오그램이 이에 해당됨
+
+
+
+
+
+
+
+
+
+
